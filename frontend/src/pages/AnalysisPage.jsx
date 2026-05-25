@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAnalysis } from '../hooks/useAnalysis';
 import { AnalysisSkeleton } from '../components/ui/Skeleton';
+import AIToolsPanel from '../components/AIToolsPanel';
 import { downloadReport } from '../utils/reportDownload';
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer 
@@ -14,6 +15,7 @@ const AnalysisPage = () => {
   const { id } = useParams();
   const { analysis, loading, fetchAnalysis, reAnalyze } = useAnalysis(id);
   const [reanalyzing, setReanalyzing] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     fetchAnalysis();
@@ -106,6 +108,22 @@ const AnalysisPage = () => {
         </div>
       </div>
 
+      <div className="flex gap-4 border-b border-slate-800 mb-8">
+        <button 
+          onClick={() => setActiveTab('overview')}
+          className={`pb-4 px-2 font-medium transition-colors border-b-2 ${activeTab === 'overview' ? 'border-sky-400 text-sky-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+        >
+          Analysis Overview
+        </button>
+        <button 
+          onClick={() => setActiveTab('tools')}
+          className={`pb-4 px-2 font-medium transition-colors border-b-2 ${activeTab === 'tools' ? 'border-sky-400 text-sky-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+        >
+          Pro AI Tools
+        </button>
+      </div>
+
+      {activeTab === 'overview' ? (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Overall Score & Radar */}
         <div className="lg:col-span-1 space-y-6">
@@ -255,6 +273,9 @@ const AnalysisPage = () => {
 
         </div>
       </div>
+      ) : (
+        <AIToolsPanel resumeId={analysis.resume._id} initialData={analysis} />
+      )}
     </div>
   );
 };

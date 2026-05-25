@@ -1,6 +1,6 @@
 const Analysis = require('../models/Analysis');
 const Resume = require('../models/Resume');
-const { analyzeResume } = require('../services/aiService');
+const { analyzeResume, analyzeJDMatch, rewriteResumePoint, generateMockInterview, generateSkillGap } = require('../services/aiService');
 const { sendSuccess, sendError } = require('../utils/responseHelper');
 
 const runAnalysis = async (resume, existingAnalysis) => {
@@ -134,10 +134,81 @@ const deleteAnalysis = async (req, res, next) => {
   }
 };
 
+const matchJD = async (req, res, next) => {
+  try {
+    const { jdText } = req.body;
+    if (!jdText) return sendError(res, 400, 'Job description text is required');
+
+    const analysis = await Analysis.findOne({ resume: req.params.resumeId, user: req.user._id }).populate('resume');
+    if (!analysis || !analysis.resume) return sendError(res, 404, 'Analysis or resume not found');
+
+    const result = await analyzeJDMatch(analysis.resume.parsedText, jdText);
+    
+    // Save to analysis document
+    analysis.jobDescriptionMatch = { ...result, jdText };
+    await analysis.save();
+
+    sendSuccess(res, 200, 'JD Match completed', { jobDescriptionMatch: analysis.jobDescriptionMatch });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const rewritePoint = async (req, res, next) => {
+  try {
+    const { bulletPoint } = req.body;
+    if (!bulletPoint) return sendError(res, 400, 'Bullet point text is required');
+
+    const rewrittenText = await rewriteResumePoint(bulletPoint);
+    sendSuccess(res, 200, 'Rewrite completed', { rewrittenText });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const generateInterview = async (req, res, next) => {
+  try {
+    const analysis = await Analysis.findOne({ resume: req.params.resumeId, user: req.user._id }).populate('resume');
+    if (!analysis || !analysis.resume) return sendError(res, 404, 'Analysis or resume not found');
+
+    const result = await generateMockInterview(analysis.resume.parsedText);
+    
+    analysis.mockInterview = result;
+    await analysis.save();
+
+    sendSuccess(res, 200, 'Interview questions generated', { mockInterview: analysis.mockInterview });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const analyzeSkillGap = async (req, res, next) => {
+  try {
+    const { targetRole } = req.body;
+    if (!targetRole) return sendError(res, 400, 'Target role is required');
+
+    const analysis = await Analysis.findOne({ resume: req.params.resumeId, user: req.user._id }).populate('resume');
+    if (!analysis || !analysis.resume) return sendError(res, 404, 'Analysis or resume not found');
+
+    const result = await generateSkillGap(analysis.resume.parsedText, targetRole);
+    
+    analysis.skillGap = result;
+    await analysis.save();
+
+    sendSuccess(res, 200, 'Skill gap analysis completed', { skillGap: analysis.skillGap });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createAnalysis,
   reAnalyze,
   getAnalysis,
   getAllAnalyses,
   deleteAnalysis,
+  matchJD,
+  rewritePoint,
+  generateInterview,
+  analyzeSkillGap,
 };

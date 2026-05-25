@@ -35,6 +35,26 @@ const analysisSchema = new mongoose.Schema(
     overallFeedback: {
       type: String,
     },
+    jobDescriptionMatch: {
+      jdText: String,
+      matchPercentage: { type: Number, min: 0, max: 100 },
+      missingSkills: [String],
+      missingKeywords: [String],
+      atsCompatibility: { type: Number, min: 0, max: 100 },
+      mismatchReasons: [String],
+      suggestions: [String]
+    },
+    mockInterview: {
+      technicalQuestions: [{ question: String, answer: String }],
+      projectQuestions: [{ question: String, answer: String }],
+      hrQuestions: [{ question: String, answer: String }],
+      difficultyLevel: String
+    },
+    skillGap: {
+      targetRole: String,
+      missingSkills: [String],
+      roadmap: [{ week: String, focus: String, tasks: [String] }]
+    },
     status: {
       type: String,
       enum: ['pending', 'processing', 'completed', 'failed'],

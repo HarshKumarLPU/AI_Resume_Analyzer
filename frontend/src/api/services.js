@@ -23,4 +23,8 @@ export const analysisAPI = {
   getById: (resumeId) => axiosInstance.get(`/analysis/${resumeId}`),
   getAll: () => axiosInstance.get('/analysis'),
   delete: (resumeId) => axiosInstance.delete(`/analysis/${resumeId}`),
+  matchJD: (resumeId, jdText) => axiosInstance.post(`/analysis/${resumeId}/jd-match`, { jdText }),
+  rewritePoint: (bulletPoint) => axiosInstance.post(`/analysis/rewrite`, { bulletPoint }),
+  generateInterview: (resumeId) => axiosInstance.post(`/analysis/${resumeId}/mock-interview`),
+  analyzeSkillGap: (resumeId, targetRole) => axiosInstance.post(`/analysis/${resumeId}/skill-gap`, { targetRole }),
 };

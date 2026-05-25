@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { analysisAPI } from '../api/services';
 import { StatSkeleton } from '../components/ui/Skeleton';
@@ -8,8 +8,10 @@ import {
   TrendingUp, 
   Award,
   ArrowRight,
-  UploadCloud
+  UploadCloud,
+  LineChart as LineChartIcon
 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const DashboardPage = () => {
   const [analyses, setAnalyses] = useState([]);
@@ -50,6 +52,30 @@ const DashboardPage = () => {
   const bestScore = completedAnalyses.length 
     ? Math.max(...completedAnalyses.map(a => a.atsScore || 0)) 
     : 0;
+
+  const versionData = useMemo(() => {
+    if (!completedAnalyses.length) return [];
+    
+    const groups = {};
+    completedAnalyses.forEach(a => {
+      const gId = a.resume?.groupId || a.resume?._id;
+      if (!groups[gId]) groups[gId] = [];
+      groups[gId].push(a);
+    });
+
+    let maxGroup = [];
+    Object.values(groups).forEach(g => {
+      if (g.length > maxGroup.length) maxGroup = g;
+    });
+
+    maxGroup.sort((a, b) => (a.resume?.versionNumber || 1) - (b.resume?.versionNumber || 1));
+
+    return maxGroup.map((a, i) => ({
+      name: `V${a.resume?.versionNumber || i + 1}`,
+      score: a.atsScore || 0,
+      date: new Date(a.createdAt).toLocaleDateString()
+    }));
+  }, [completedAnalyses]);
 
   const StatCard = ({ title, value, subtitle, icon: Icon, valueClass = 'text-white' }) => (
     <div className="card h-[140px] flex flex-col justify-between group relative overflow-hidden">
@@ -109,6 +135,41 @@ const DashboardPage = () => {
             icon={Award}
             valueClass={getScoreColor(bestScore)}
           />
+        </div>
+      )}
+
+      {!loading && versionData.length > 1 && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-display font-semibold text-white flex items-center gap-2">
+                <LineChartIcon className="text-sky-400" size={20} />
+                Version Progress
+              </h2>
+              <p className="text-sm text-slate-400 mt-1">Score improvement across your most updated resume.</p>
+            </div>
+          </div>
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={versionData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="name" stroke="#94a3b8" tick={{ fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8' }} axisLine={false} tickLine={false} domain={[0, 100]} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc', borderRadius: '8px' }}
+                  itemStyle={{ color: '#38bdf8' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="score" 
+                  stroke="#38bdf8" 
+                  strokeWidth={3}
+                  dot={{ fill: '#0f172a', stroke: '#38bdf8', strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, fill: '#38bdf8' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
 

@@ -49,6 +49,16 @@ const resumeSchema = new mongoose.Schema(
       ref: 'Analysis',
       default: null,
     },
+    groupId: {
+      type: String,
+      default: function() {
+        return this._id.toString();
+      }
+    },
+    versionNumber: {
+      type: Number,
+      default: 1,
+    },
   },
   { timestamps: true }
 );

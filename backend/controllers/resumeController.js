@@ -40,7 +40,19 @@ const uploadResume = async (req, res, next) => {
       }
     }
 
-    const resume = await Resume.create({
+    let groupId = req.body.groupId;
+    let versionNumber = 1;
+
+    if (groupId) {
+      const latestResume = await Resume.findOne({ groupId, user: req.user._id }).sort('-versionNumber');
+      if (latestResume) {
+        versionNumber = latestResume.versionNumber + 1;
+      } else {
+        groupId = undefined;
+      }
+    }
+
+    const resumeData = {
       user: req.user._id,
       originalName: originalname,
       fileType,
@@ -50,7 +62,14 @@ const uploadResume = async (req, res, next) => {
       storageType,
       parsedText,
       isParsed,
-    });
+    };
+
+    if (groupId) {
+      resumeData.groupId = groupId;
+      resumeData.versionNumber = versionNumber;
+    }
+
+    const resume = await Resume.create(resumeData);
 
     await User.findByIdAndUpdate(req.user._id, { $inc: { resumeCount: 1 } });
 
